@@ -17,12 +17,9 @@ def task_create(task, db):
     finally:
         cursor.close()
 
-def get_tasks(filters,db):
+def get_tasks(filters, db):
     cursor = db.cursor()
-
     try:
-
-        base_query = sql.SQL("SELECT * FROM tasks")
         where_clauses = []
         params = []
 
@@ -38,26 +35,31 @@ def get_tasks(filters,db):
             where_clauses.append(sql.SQL("user_id = %s"))
             params.append(filters.user_id)
 
-        query_parts = [base_query]
+        where_stmt = sql.SQL("")
         if where_clauses:
-            query_parts.append(sql.SQL("WHERE"))
-            query_parts.append(sql.SQL(" AND ").join(where_clauses))
+            where_stmt = sql.SQL("WHERE ") + sql.SQL(" AND ").join(where_clauses)
+
+        count_query = sql.SQL("SELECT COUNT(*) FROM tasks ") + where_stmt
+        cursor.execute(count_query, params)
+        total_count = cursor.fetchone()[0]
 
         sort_column = filters.sort_by if filters.sort_by else "id"
         order_direction = sql.SQL("DESC") if filters.order.lower() == "desc" else sql.SQL("ASC")
-
-        query_parts.append(
-            sql.SQL("ORDER BY {} {}").format(
-                sql.Identifier(sort_column),
-                order_direction
-            ))
-        query_parts.append(sql.SQL("LIMIT %s OFFSET %s"))
-        params.extend([filters.limit, filters.skip])
+        
+        query_parts = [
+            sql.SQL("SELECT * FROM tasks"),
+            where_stmt,
+            sql.SQL("ORDER BY {} {}").format(sql.Identifier(sort_column), order_direction),
+            sql.SQL("LIMIT %s OFFSET %s")
+        ]
 
         final_query = sql.SQL(" ").join(query_parts)
-        cursor.execute(final_query,params)
+        
+        paginated_params = params + [filters.limit, filters.skip]
+        cursor.execute(final_query, paginated_params)
+        tasks = cursor.fetchall()
 
-        return cursor.fetchall()
+        return tasks, total_count
     finally:
         cursor.close()
 
@@ -69,6 +71,14 @@ def task_get_by_id(task_id, db):
             "SELECT * FROM tasks WHERE id = %s", (task_id,)
         )
         return cursor.fetchone()
+    finally:
+        cursor.close()
+
+def check_user_exists(user_id: int, db) -> bool:
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT 1 FROM users WHERE id = %s", (user_id,))
+        return cursor.fetchone() is not None
     finally:
         cursor.close()
 

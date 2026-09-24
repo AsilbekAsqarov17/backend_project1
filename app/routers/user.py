@@ -16,7 +16,7 @@ from app.services.user import (
 router = APIRouter()
 
 #Create user route function 
-@router.post("/users/create", status_code=status.HTTP_201_CREATED)
+@router.post("/users", status_code=status.HTTP_201_CREATED)
 def create_user(user:user_define, db = Depends(get_db)):
     result = user_create(user, db)
     return {"message": result}
@@ -36,7 +36,7 @@ def get_user(user_id:int, db = Depends(get_db)):
     return {"message": user}
 
 #Put/Replace user route function
-@router.put("/users/put/{user_id}",status_code=status.HTTP_200_OK)
+@router.put("/users/{user_id}",status_code=status.HTTP_200_OK)
 def replace_user(user:user_define, user_id:int, db = Depends(get_db)):
     row_affected = user_replace(user, user_id, db)
     if not row_affected:
@@ -48,7 +48,7 @@ def replace_user(user:user_define, user_id:int, db = Depends(get_db)):
 
 
 #Patch/Update user route function
-@router.patch("/users/patch/{user_id}",status_code=status.HTTP_200_OK)
+@router.patch("/users/{user_id}",status_code=status.HTTP_200_OK)
 def update_user(user_id:int, column:column_update, db = Depends(get_db)):
     rows_affected = user_update(user_id, column.column_name, column.value, db)
     if not rows_affected:
@@ -60,7 +60,7 @@ def update_user(user_id:int, column:column_update, db = Depends(get_db)):
 
 
 #Delete user route function
-@router.delete("/users/delete/{user_id}", status_code=status.HTTP_200_OK)
+@router.delete("/users/{user_id}", status_code=status.HTTP_200_OK)
 def delete_user(user_id:int, db = Depends(get_db)):
     rows_affected = user_delete(user_id, db)
     if not rows_affected:
