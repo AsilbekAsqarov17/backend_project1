@@ -1,6 +1,6 @@
 from app.database import get_db
-
-from fastapi import APIRouter, Depends, HTTPException,status
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException,status, Path
 
 from app.models.task import task_define, column_update, TaskFilterParams
 
@@ -16,6 +16,9 @@ from app.services.task import (
 )
 
 router = APIRouter()
+
+TaskID = Annotated[int, Path(gt=0, title="Task ID", example=1)]
+UserID = Annotated[int, Path(gt=0, title="User ID", example=21)]
 
 @router.post("/tasks", status_code=status.HTTP_201_CREATED)
 def create_task(task:task_define, db = Depends(get_db)):
@@ -34,7 +37,7 @@ def get_all_tasks(filters:TaskFilterParams = Depends(),db=Depends(get_db)):
     }
 
 @router.get("/tasks/{task_id}", status_code=status.HTTP_200_OK)
-def get_task(task_id:int, db=Depends(get_db)):
+def get_task(task_id:TaskID, db=Depends(get_db)):
     result = task_get_by_id(task_id,db)
 
     if not result:
@@ -46,7 +49,7 @@ def get_task(task_id:int, db=Depends(get_db)):
     return {"message":result}
 
 @router.get("/tasks/user/{user_id}", status_code=status.HTTP_200_OK)
-def get_task_userid(user_id:int, db = Depends(get_db)):
+def get_task_userid(user_id:UserID, db = Depends(get_db)):
 
     if not check_user_exists(user_id, db):
         raise HTTPException(
@@ -59,7 +62,7 @@ def get_task_userid(user_id:int, db = Depends(get_db)):
     return {"message": task}
 
 @router.put("/tasks/{task_id}", status_code=status.HTTP_200_OK)
-def replace_task(task_id:int,task:task_define ,db = Depends(get_db)):
+def replace_task(task_id:TaskID,task:task_define ,db = Depends(get_db)):
     row_affected = task_replace(task_id, task, db)
     if not row_affected:
         raise HTTPException(
@@ -70,7 +73,7 @@ def replace_task(task_id:int,task:task_define ,db = Depends(get_db)):
 
 #Patch/Update user route function
 @router.patch("/tasks/{task_id}", status_code=status.HTTP_200_OK)
-def update_task(task_id:int, column:column_update, db = Depends(get_db)):
+def update_task(task_id:TaskID, column:column_update, db = Depends(get_db)):
     rows_affected = task_update(task_id, column.column_name, column.value, db)
     if not rows_affected:
         raise HTTPException(
@@ -81,7 +84,7 @@ def update_task(task_id:int, column:column_update, db = Depends(get_db)):
 
 #Delete user route function
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
-def delete_task(task_id:int, db = Depends(get_db)):
+def delete_task(task_id:TaskID, db = Depends(get_db)):
     rows_affected = task_delete(task_id, db)
     if not rows_affected:
         raise HTTPException(

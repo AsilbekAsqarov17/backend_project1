@@ -1,6 +1,6 @@
 from app.database import get_db
-
-from fastapi import APIRouter, Depends, HTTPException,status
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException,status, Path
 
 from app.models.user import user_define, column_update
 
@@ -14,6 +14,8 @@ from app.services.user import (
 )
 
 router = APIRouter()
+
+UserID = Annotated[int, Path(gt=0, title = "User ID", example=21)]
 
 #Create user route function 
 @router.post("/users", status_code=status.HTTP_201_CREATED)
@@ -29,7 +31,7 @@ def get_all_users(db = Depends(get_db)):
 
 #Get one user route function
 @router.get("/users/{user_id}", status_code=status.HTTP_200_OK)
-def get_user(user_id:int, db = Depends(get_db)):
+def get_user(user_id:UserID, db = Depends(get_db)):
     user = get_user_by_id(user_id,db)
     if not user:
         raise HTTPException(status_code=404,detail="User not found")
@@ -37,7 +39,7 @@ def get_user(user_id:int, db = Depends(get_db)):
 
 #Put/Replace user route function
 @router.put("/users/{user_id}",status_code=status.HTTP_200_OK)
-def replace_user(user:user_define, user_id:int, db = Depends(get_db)):
+def replace_user(user:user_define, user_id:UserID, db = Depends(get_db)):
     row_affected = user_replace(user, user_id, db)
     if not row_affected:
         raise HTTPException(
@@ -49,7 +51,7 @@ def replace_user(user:user_define, user_id:int, db = Depends(get_db)):
 
 #Patch/Update user route function
 @router.patch("/users/{user_id}",status_code=status.HTTP_200_OK)
-def update_user(user_id:int, column:column_update, db = Depends(get_db)):
+def update_user(user_id:UserID, column:column_update, db = Depends(get_db)):
     rows_affected = user_update(user_id, column.column_name, column.value, db)
     if not rows_affected:
         raise HTTPException(
@@ -61,7 +63,7 @@ def update_user(user_id:int, column:column_update, db = Depends(get_db)):
 
 #Delete user route function
 @router.delete("/users/{user_id}", status_code=status.HTTP_200_OK)
-def delete_user(user_id:int, db = Depends(get_db)):
+def delete_user(user_id:UserID, db = Depends(get_db)):
     rows_affected = user_delete(user_id, db)
     if not rows_affected:
         raise HTTPException(
